@@ -11,6 +11,7 @@ Shader "Custom/SimpleLitParallax"
         
         [NoScaleOffset] _ParallaxMap ("Parallax Map", 2D) = "black" {}
         _ParallaxIntensity ("Parallax Intensity", Range(0.0, 0.1)) = 0.02
+        _ParallaxSteps ("Parallax Steps", Integer) = 10
     }
 
     SubShader
@@ -34,7 +35,7 @@ Shader "Custom/SimpleLitParallax"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             #define PARALLAX_OFFSET_LIMITING 1
-            #define PARALLAX_BIAS 0.42
+            #define PARALLAX_BIAS 0.0
 
             struct Attributes
             {
@@ -71,6 +72,7 @@ Shader "Custom/SimpleLitParallax"
                 half _Metallic;
                 float _BumpScale;
                 float _ParallaxIntensity;
+                int _ParallaxSteps;
             CBUFFER_END
 
             half3 NormalTangentToWorld(half3 normalTS, half3 normalWS, half3 tangentWS, half3 bitangentWS)
@@ -109,6 +111,75 @@ Shader "Custom/SimpleLitParallax"
                 return output;
             }
 
+            float GetParallaxHeight(float2 uv)
+            {
+                return SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, uv).g;
+            }
+
+            float2 ParallaxOffset(float2 uv, float2 viewDir)
+            {
+                float height = GetParallaxHeight(uv);
+                height -= 0.5;
+                height *= _ParallaxIntensity;
+                return viewDir * height;
+            }
+            
+            float2 ParallaxRaymarching (float2 uv, float2 viewDir)
+            {
+				#if !defined(PARALLAX_RAYMARCHING_STEPS)
+					#define PARALLAX_RAYMARCHING_STEPS 10
+				#endif
+            	
+				float2 uvOffset = 0;
+				float stepSize = 1.0 / PARALLAX_RAYMARCHING_STEPS;
+				float2 uvDelta = viewDir * (stepSize * _ParallaxIntensity);
+
+				float stepHeight = 1;
+				float surfaceHeight = GetParallaxHeight(uv);
+
+				float2 prevUVOffset = uvOffset;
+				float prevStepHeight = stepHeight;
+				float prevSurfaceHeight = surfaceHeight;
+
+				for (int i = 1; i < PARALLAX_RAYMARCHING_STEPS && stepHeight > surfaceHeight; i++)
+				{
+					prevUVOffset = uvOffset;
+					prevStepHeight = stepHeight;
+					prevSurfaceHeight = surfaceHeight;
+					
+					uvOffset -= uvDelta;
+					stepHeight -= stepSize;
+					surfaceHeight = GetParallaxHeight(uv + uvOffset);
+				}
+
+				#if !defined(PARALLAX_RAYMARCHING_SEARCH_STEPS)
+					#define PARALLAX_RAYMARCHING_SEARCH_STEPS 0
+				#endif
+				#if PARALLAX_RAYMARCHING_SEARCH_STEPS > 0
+					for (int i = 0; i < PARALLAX_RAYMARCHING_SEARCH_STEPS; i++) {
+						uvDelta *= 0.5;
+						stepSize *= 0.5;
+
+						if (stepHeight < surfaceHeight) {
+							uvOffset += uvDelta;
+							stepHeight += stepSize;
+						}
+						else {
+							uvOffset -= uvDelta;
+							stepHeight -= stepSize;
+						}
+						surfaceHeight = GetParallaxHeight(uv + uvOffset);
+					}
+				#elif defined(PARALLAX_RAYMARCHING_INTERPOLATE)
+					float prevDifference = prevStepHeight - prevSurfaceHeight;
+					float difference = surfaceHeight - stepHeight;
+					float t = prevDifference / (prevDifference + difference);
+					uvOffset = prevUVOffset - uvDelta * t;
+				#endif
+
+				return uvOffset;
+			}
+
             void ApplyParallax(inout Varyings input)
             {
                 input.viewDirTS = normalize(input.viewDirTS);
@@ -116,11 +187,9 @@ Shader "Custom/SimpleLitParallax"
                     input.viewDirTS.xy /= input.viewDirTS.z + PARALLAX_BIAS;
                 #endif
                 
-                float height = SAMPLE_TEXTURE2D(_ParallaxMap, sampler_ParallaxMap, input.uv).g;
-                height -= 0.5;
-                height *= _ParallaxIntensity;
+                float2 uvOffset = ParallaxRaymarching(input.uv, input.viewDirTS.xy);
                 
-                input.uv.xy += input.viewDirTS.xy * height;
+                input.uv.xy += uvOffset;
             }
 
             half4 PassFragment(Varyings input) : SV_Target
