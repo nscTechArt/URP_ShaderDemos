@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_Unlit_ProceduralMask
+  m_Shader: {fileID: 4800000, guid: b8fdc840413acf64bacce6992e2ce4e4, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords:
+  - _ABSU_ON
+  - _ABSV_ON
+  - _COMBINEMODE_MAX
+  - _ENABLEU_ON
+  - _ENABLEV_ON
+  - _USEU_ON
+  - _USEV_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AbsU: -0.81
+    - _AbsV: -8.13
+    - _BlendMode: 0
+    - _EnableU: 1
+    - _EnableV: 1
+    - _FadeU: 1
+    - _FadeV: 1
+    - _InvertU: 0
+    - _InvertV: 0
+    - _ReverseU: 0.32
+    - _ReverseV: 1
+    - _StartU: 0
+    - _StartV: 0
+    - _UHardness: 0.5
+    - _UPosition: 0.5
+    - _VHardness: 0.5
+    - _VPosition: 0.698
+    m_Colors: []
+  m_BuildTextureStacks: []
